@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>scrollspy</title>
+    <script src="./jquery.js"></script>
+    <script src="../jquery-scrollspy.js"></script>
+  </head>
+  <body>
+    <style>
+      div {
+        white-space: nowrap;
+      }
+      .scrolltest {
+        width: 200px;
+        height: 200px;
+        border: 1px solid #ccc;
+        margin: 20px;
+        text-align: center;
+        display: inline-block;
+      }
+    </style>
+    <script>
+
+      var $body = $('body'),
+        index = 0;
+
+      for (var x = 0; x < 10; ++x) {
+        var cols = '';
+        for (var y = 0; y < 10; ++y) {
+          cols += '<section class="scrolltest"><h1>Section #' + (++index) + '</h1></section>';
+        }
+        $body.append('<div>' + cols + '</div>');
+      }
+
+      $('.scrolltest').on('scrollspy:enter', function () {
+        console.log('entered section #', $(this).index('section') + 1);
+      });
+
+      $('.scrolltest').on('scrollspy:leave', function () {
+        console.log('left section #', $(this).index('section') + 1);
+      });
+
+      $('.scrolltest').scrollspy({interval: 500});
+
+    </script>
+  </body>
+</html>
