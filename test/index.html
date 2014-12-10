@@ -11,12 +11,17 @@
         white-space: nowrap;
       }
       .scrolltest {
-        width: 200px;
-        height: 200px;
+        width: 250px;
+        height: 100px;
         border: 1px solid #ccc;
-        margin: 20px;
+        background-color: #fafafa;
+        margin: 0;
         text-align: center;
         display: inline-block;
+      }
+
+      .scrolltest.inview {
+        background-color: #fabebe;
       }
     </style>
     <script>
@@ -24,23 +29,27 @@
       var $body = $('body'),
         index = 0;
 
-      for (var x = 0; x < 10; ++x) {
+      for (var y = 0; y < 5; ++y) {
         var cols = '';
-        for (var y = 0; y < 10; ++y) {
-          cols += '<section class="scrolltest"><h1>Section #' + (++index) + '</h1></section>';
+        for (var x = 0; x < 5; ++x) {
+          cols += '<section class="scrolltest scrolltest_' + y + '"'
+            + ' style="margin: ' + y * 100 + 'px;">'
+            + '<h1>Section #' + (++index) + '</h1>'
+            + '</section>';
         }
         $body.append('<div>' + cols + '</div>');
+
+        $('.scrolltest_' + y)
+          .scrollspy({interval: 500, offsetTop: - y * 50, offsetLeft: -y * 50, offsetBottom: y * 50})
+          .on('scrollspy:enter', function (ev) {
+            console.log('entered section #', $(this).index('section') + 1, ev);
+            $(this).addClass('inview');
+          })
+          .on('scrollspy:leave', function (ev) {
+            console.log('left section #', $(this).index('section') + 1, ev);
+            $(this).removeClass('inview');
+          });
       }
-
-      $('.scrolltest').on('scrollspy:enter', function () {
-        console.log('entered section #', $(this).index('section') + 1);
-      });
-
-      $('.scrolltest').on('scrollspy:leave', function () {
-        console.log('left section #', $(this).index('section') + 1);
-      });
-
-      $('.scrolltest').scrollspy({interval: 500});
 
     </script>
   </body>

@@ -7,22 +7,28 @@
     lastElementsInView = [],
     isSpying = false,
     ticks = 0,
-    nextTime = Date.now(),
-    offset = {
-      top : 0,
-      right : 0,
-      bottom : 0,
-      left : 0,
+    lastTime = 0,
+    interval = 100,
+    timeout;
+
+  function getElementRect ($el) {
+    var elOffset = $el.offset(),
+      elScrollOffset = $el.data('scrollspy-offset') || {};
+    return {
+      top: elOffset.top + (elScrollOffset.top || 0),
+      left: elOffset.left + (elScrollOffset.left || 0),
+      bottom: elOffset.top + $el.outerHeight() + (elScrollOffset.bottom || 0),
+      right: elOffset.left + $el.outerWidth() + (elScrollOffset.right || 0)
     };
+  }
 
+  function getElementsInView (viewRect) {
 
-  function getElementsInView (top, right, bottom, left) {
     var $hits = $();
+
     $.each($elements, function (i, $el) {
-      var elOffset = $el.offset(),
-        elTop = elOffset.top,
-        elLeft = elOffset.left;
-      if (!(elLeft > right || elLeft + $el.outerWidth() < left || elTop > bottom || elTop + $el.outerHeight() < top)) {
+      var elRect = getElementRect($el);
+      if (!(elRect.left > viewRect.right || elRect.right < viewRect.left || elRect.top > viewRect.bottom || elRect.bottom < viewRect.top)) {
         $hits.push($el);
       }
     });
@@ -30,75 +36,95 @@
     return $hits;
   }
 
+  function fnOnScroll () {
+    var now = Date.now(),
+      viewRect,
+      windowScrollTop,
+      windowScrollLeft,
+      newElementsInView,
+      i,
+      length,
+      $el,
+      lastTick;
+
+    if ('number' === typeof timeout) {
+      window.clearTimeout(timeout);
+      timeout = undefined;
+    }
+
+    if (now < lastTime + interval) {
+      timeout = window.setTimeout(fnOnScroll, interval);
+      return;
+    }
+
+    // scroll container rect
+    windowScrollTop = $window.scrollTop();
+    windowScrollLeft = $window.scrollLeft();
+    viewRect = {
+      top: windowScrollTop,
+      left: windowScrollLeft
+    };
+
+    viewRect.bottom = windowScrollTop + $window.height();
+    viewRect.right = windowScrollLeft + $window.width();
+
+    // determine which elements are in view
+    newElementsInView = getElementsInView(viewRect);
+
+    // unique tick id
+    ticks = Number.MAX_VALUE === ticks ? 0 : ticks + 1;
+
+    for (i = 0, length = newElementsInView.length; i < length; ++i) {
+      $el = newElementsInView[i];
+      lastTick = $el.data('scrollspy-ticks');
+      if ('number' !== typeof lastTick) {
+        // entered into view
+        var enterEvent = $.Event('scrollspy:enter');
+        enterEvent.viewRect = viewRect;
+        enterEvent.elementRect = getElementRect($el);
+        $el.trigger(enterEvent);
+      }
+      // update tick id
+      $el.data('scrollspy-ticks', ticks);
+    }
+
+    // determine which elements are no longer in view
+    for (i = 0, length = lastElementsInView.length; i < length; ++i) {
+      $el = lastElementsInView[i];
+      lastTick = $el.data('scrollspy-ticks');
+      if ('number' === typeof lastTick && lastTick !== ticks) {
+        // view leave
+        var leaveEvent = $.Event('scrollspy:leave');
+        leaveEvent.viewRect = viewRect;
+        leaveEvent.elementRect = getElementRect($el);
+        $el
+          .data('scrollspy-ticks', null)
+          .trigger(leaveEvent);
+      }
+    }
+
+    // remember elements in view for next tick
+    lastElementsInView = newElementsInView;
+
+    lastTime = now;
+  }
 
   $.scrollspy = function (selector, options) {
 
     var $selector = $(selector),
-      fnOnScroll = function () {
-        var now = Date.now(),
-          top,
-          left,
-          newElementsInView,
-          i,
-          length,
-          $el,
-          lastTick;
-
-        if (now < nextTime) {
-          return;
-        }
-
-        // scroll container rect
-        top = $window.scrollTop();
-        left = $window.scrollLeft();
-
-        // determine which elements are in view
-        newElementsInView = getElementsInView(
-          top + offset.top,
-          left + $window.width() + offset.right + offset.left,
-          top + $window.height() + offset.bottom + offset.top,
-          left + offset.left
-        );
-
-        // unique tick id
-        ticks = Number.MAX_VALUE === ticks ? 0 : ticks + 1;
-
-        for (i = 0, length = newElementsInView.length; i < length; ++i) {
-          $el = newElementsInView[i];
-          lastTick = $el.data('scrollspy:ticks');
-          if ('number' !== typeof lastTick) {
-            // entered into view
-            $el.triggerHandler('scrollspy:enter');
-          }
-          // update tick id
-          $el.data('scrollspy:ticks', ticks);
-        }
-
-        // determine which elements are no longer in view
-        for (i = 0, length = lastElementsInView.length; i < length; ++i) {
-          $el = lastElementsInView[i];
-          lastTick = $el.data('scrollspy:ticks');
-          if ('number' === typeof lastTick && lastTick !== ticks) {
-            // view left
-            $el
-              .data('scrollspy:ticks', null)
-              .triggerHandler('scrollspy:leave');
-          }
-        }
-
-        // remember elements in view for next tick
-        lastElementsInView = newElementsInView;
-
-        window.setTimeout(function () {
-          fnOnScroll();
-        }, options.interval || 100);
-
-        nextTime = now + (options.interval || 100);
+      offset = {
+        top : 0,
+        right : 0,
+        bottom : 0,
+        left : 0,
       };
 
-    options = options || {
-      interval: 100
-    };
+    options = options || {};
+
+    // update interval
+    if (options.interval) {
+      interval = options.interval;
+    }
 
     offset.top = options.offsetTop || 0;
     offset.right = options.offsetRight || 0;
@@ -106,19 +132,23 @@
     offset.left = options.offsetLeft || 0;
 
     $selector.each(function () {
-      $elements.push($(this));
+      var $el = $(this);
+      $el.data('scrollspy-offset', offset);
+      $elements.push($el);
     });
 
-    if (!isSpying) {
-      $window.on('scroll resize', fnOnScroll);
-      isSpying = true;
-    }
+    if (isSpying) {
 
-    if ('complete' === window.document.readyState || 'interactive' === window.document.readyState) {
-      fnOnScroll();
+      $window.on('scroll resize', fnOnScroll);
+
+      if ('complete' === window.document.readyState || 'interactive' === window.document.readyState) {
+        fnOnScroll();
+      }
+
     }
     else {
       $(window.document).ready(fnOnScroll);
+      isSpying = true;
     }
 
     return $selector;
