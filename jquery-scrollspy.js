@@ -1,3 +1,10 @@
+/*
+jquery scrollspy plugin
+url: https://github.com/kruemelo/jquery-scrollspy
+requires: jQuery
+Copyright (c) 2014 kruemelo https://github.com/kruemelo
+license: MIT (http://opensource.org/licenses/mit-license.php)
+*/
 ;(function ($) {
 
   'use strict';
