@@ -40,7 +40,7 @@
         $body.append('<div>' + cols + '</div>');
 
         $('.scrolltest_' + y)
-          .scrollspy({interval: 500, offsetTop: - y * 50, offsetLeft: -y * 50, offsetBottom: y * 50})
+          .scrollspy({interval: 100, offsetTop: - y * 50, offsetLeft: -y * 50, offsetBottom: y * 50})
           .on('scrollspy:enter', function (ev) {
             console.log('entered section #', $(this).index('section') + 1, ev);
             $(this).addClass('inview');

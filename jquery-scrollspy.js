@@ -42,9 +42,6 @@
       windowScrollTop,
       windowScrollLeft,
       newElementsInView,
-      i,
-      length,
-      $el,
       lastTick;
 
     if ('number' === typeof timeout) {
@@ -74,8 +71,7 @@
     // unique tick id
     ticks = Number.MAX_VALUE === ticks ? 0 : ticks + 1;
 
-    for (i = 0, length = newElementsInView.length; i < length; ++i) {
-      $el = newElementsInView[i];
+    $.each(newElementsInView, function (i, $el) {
       lastTick = $el.data('scrollspy-ticks');
       if ('number' !== typeof lastTick) {
         // entered into view
@@ -86,11 +82,10 @@
       }
       // update tick id
       $el.data('scrollspy-ticks', ticks);
-    }
+    });
 
     // determine which elements are no longer in view
-    for (i = 0, length = lastElementsInView.length; i < length; ++i) {
-      $el = lastElementsInView[i];
+    $.each(lastElementsInView, function (i, $el) {
       lastTick = $el.data('scrollspy-ticks');
       if ('number' === typeof lastTick && lastTick !== ticks) {
         // view leave
@@ -101,7 +96,7 @@
           .data('scrollspy-ticks', null)
           .trigger(leaveEvent);
       }
-    }
+    });
 
     // remember elements in view for next tick
     lastElementsInView = newElementsInView;
