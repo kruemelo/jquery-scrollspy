@@ -118,7 +118,7 @@ license: MIT (http://opensource.org/licenses/mit-license.php)
         top : 0,
         right : 0,
         bottom : 0,
-        left : 0,
+        left : 0
       };
 
     options = options || {};
